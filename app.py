@@ -77,6 +77,7 @@ def cargar_datos():
 def buscar_estudiante(df, run):
     """
     Busca un estudiante en la base de datos por RUN
+    VERSIÓN MEJORADA - Maneja RUNs con o sin DV correctamente
     
     Args:
         df (DataFrame): Base de datos de estudiantes
@@ -88,25 +89,40 @@ def buscar_estudiante(df, run):
     # Limpiar el RUN ingresado
     run_limpio = limpiar_run(str(run))
     
-    # Extraer solo los números (sin DV)
-    if len(run_limpio) >= 2:
-        try:
-            # Quitar el último carácter (DV) y convertir a int
-            run_sin_dv = int(run_limpio[:-1])
-        except ValueError:
-            # Si todo el string es el RUN sin DV
-            try:
-                run_sin_dv = int(run_limpio)
-            except:
-                return None
-    else:
+    if not run_limpio or len(run_limpio) < 2:
         return None
     
-    # Buscar en el DataFrame (buscar como int)
-    resultado = df[df['SAL_RUN'] == run_sin_dv]
+    # Estrategia 1: Intentar buscar el RUN completo tal cual
+    # (usuario puede haber ingresado solo números sin DV)
+    try:
+        run_completo = int(run_limpio)
+        resultado = df[df['SAL_RUN'] == run_completo]
+        if len(resultado) > 0:
+            return resultado.iloc[0]
+    except:
+        pass
     
-    if len(resultado) > 0:
-        return resultado.iloc[0]
+    # Estrategia 2: Asumir que el último dígito es el DV
+    # (usuario ingresó RUN con DV)
+    try:
+        run_sin_dv = int(run_limpio[:-1])
+        resultado = df[df['SAL_RUN'] == run_sin_dv]
+        if len(resultado) > 0:
+            return resultado.iloc[0]
+    except:
+        pass
+    
+    # Estrategia 3: Si tiene más de 8 dígitos, probar quitando 2 últimos
+    # (por si acaso tiene formato raro)
+    if len(run_limpio) > 8:
+        try:
+            run_sin_2digitos = int(run_limpio[:-2])
+            resultado = df[df['SAL_RUN'] == run_sin_2digitos]
+            if len(resultado) > 0:
+                return resultado.iloc[0]
+        except:
+            pass
+    
     return None
 
 
