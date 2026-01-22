@@ -259,73 +259,60 @@ def main():
         # Formulario para generar certificado
         st.markdown("### 📝 Generar Certificado")
         
-        with st.form("form_certificado"):
-            col1, col2 = st.columns(2)
-            
-            with col1:
-                nombre_estudiante = st.text_input(
-                    "Nombre completo del estudiante*",
-                    placeholder="Ej: MARÍA FERNANDA GONZÁLEZ LÓPEZ",
-                    help="Ingresa el nombre tal como debe aparecer en el certificado (en mayúsculas)"
-                )
-            
-            with col2:
-                fecha_emision = st.date_input(
-                    "Fecha de emisión",
-                    value=datetime.now(),
-                    help="Fecha que aparecerá en el certificado"
-                )
-            
-            finalidad = st.text_input(
-                "Finalidad del certificado (opcional)",
-                value="Para fines pertinentes",
-                help="Especifica la finalidad del certificado"
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            nombre_estudiante = st.text_input(
+                "Nombre completo del estudiante*",
+                placeholder="Ej: MARÍA FERNANDA GONZÁLEZ LÓPEZ",
+                help="Ingresa el nombre tal como debe aparecer en el certificado (en mayúsculas)",
+                key="nombre_estudiante"
             )
-            
-            generar_btn = st.form_submit_button("📄 Generar Certificado", type="primary", use_container_width=True)
-            
-            if generar_btn:
-                if not nombre_estudiante or nombre_estudiante.strip() == "":
-                    st.error("❌ Por favor ingresa el nombre del estudiante")
-                else:
-                    try:
-                        with st.spinner('Generando certificado...'):
-                            # Preparar datos para el certificado
-                            datos_certificado = {
-                                'nombre': nombre_estudiante.upper(),
-                                'run': run_formateado,
-                                'establecimiento': estudiante['NOM_RBD'],
-                                'rbd': estudiante['RBD_PRE'],
-                                'curso': curso_completo,
-                                'año': estudiante['ANO_ESCOLAR']
-                            }
-                            
-                            # Generar certificado
-                            generador = GeneradorCertificado('template_certificado.docx')
-                            certificado_buffer = generador.generar_certificado(
-                                datos_certificado,
-                                fecha_emision=datetime.combine(fecha_emision, datetime.min.time())
-                            )
-                            
-                            # Nombre del archivo
-                            nombre_archivo = f"Certificado_Matricula_{estudiante['SAL_RUN']}_{datetime.now().strftime('%Y%m%d')}.docx"
-                            
-                            # Botón de descarga
-                            st.success("✅ Certificado generado exitosamente")
-                            st.download_button(
-                                label="📥 Descargar Certificado",
-                                data=certificado_buffer,
-                                file_name=nombre_archivo,
-                                mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-                                type="primary",
-                                use_container_width=True
-                            )
-                            
-                            st.balloons()
-                    
-                    except Exception as e:
-                        st.error(f"❌ Error al generar el certificado: {str(e)}")
-                        st.exception(e)
+        
+        with col2:
+            fecha_emision = st.date_input(
+                "Fecha de emisión",
+                value=datetime.now(),
+                help="Fecha que aparecerá en el certificado",
+                key="fecha_emision"
+            )
+        
+        if st.button("📄 Generar Certificado", type="primary", use_container_width=True):
+            if not nombre_estudiante or nombre_estudiante.strip() == "":
+                st.error("❌ Por favor ingresa el nombre del estudiante")
+            else:
+                try:
+                    with st.spinner('Generando certificado...'):
+                        datos_certificado = {
+                            'nombre': nombre_estudiante.upper(),
+                            'run': run_formateado,
+                            'establecimiento': estudiante['NOM_RBD'],
+                            'rbd': estudiante['RBD_PRE'],
+                            'curso': curso_completo,
+                            'año': estudiante['ANO_ESCOLAR']
+                        }
+                        
+                        generador = GeneradorCertificado('template_certificado.docx')
+                        certificado_buffer = generador.generar_certificado(
+                            datos_certificado,
+                            fecha_emision=datetime.combine(fecha_emision, datetime.min.time())
+                        )
+                        
+                        st.session_state['certificado'] = certificado_buffer
+                        st.session_state['nombre_archivo'] = f"Certificado_{estudiante['SAL_RUN']}.docx"
+                        st.success("✅ Certificado generado")
+                        
+                except Exception as e:
+                    st.error(f"❌ Error: {str(e)}")
+        
+        # Botón descarga FUERA
+        if 'certificado' in st.session_state:
+            st.download_button(
+                "📥 Descargar Certificado",
+                st.session_state['certificado'],
+                st.session_state['nombre_archivo'],
+                mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+            )
 
 
 if __name__ == "__main__":
