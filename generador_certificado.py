@@ -1,11 +1,13 @@
 """
 Generador de Certificados de Matrícula
 SLEP Santa Corina
+VERSIÓN MEJORADA - Funciona con cualquier template
 """
 
 from docx import Document
 from datetime import datetime
 import io
+import re
 
 
 class GeneradorCertificado:
@@ -67,7 +69,7 @@ class GeneradorCertificado:
     
     def _reemplazar_en_texto(self, para, datos, fecha):
         """
-        Reemplaza los placeholders en un párrafo
+        Reemplaza los placeholders en un párrafo usando patrones inteligentes
         
         Args:
             para: Párrafo de python-docx
@@ -77,54 +79,76 @@ class GeneradorCertificado:
         # Obtener el texto completo del párrafo
         texto_original = para.text
         
-        # Lista de reemplazos a realizar
-        reemplazos = {
-            'SOFIA MENDEZ FLOREZ': datos.get('nombre', '').upper(),
-            '27.571.150-0': datos.get('run', ''),
-            'ESCUELA CARLOS CONDELL DE LA HAZA': datos.get('establecimiento', '').upper(),
-            '8521': str(datos.get('rbd', '')),
-            '6° básico C': datos.get('curso', ''),
-            '2026': str(datos.get('año', 2026)),
-            '20 de enero del 2026': fecha
-        }
+        if not texto_original.strip():
+            return
         
-        # Aplicar reemplazos
         texto_nuevo = texto_original
-        for viejo, nuevo in reemplazos.items():
-            if viejo in texto_nuevo:
-                texto_nuevo = texto_nuevo.replace(viejo, str(nuevo))
         
-        # Si hubo cambios, actualizar el párrafo manteniendo el formato
+        # PATRÓN 1: Buscar "Don(a) NOMBRE, RUN"
+        # Captura nombres en mayúsculas antes de una coma
+        patron_nombre = r'Don\(a\)\s+([A-ZÁÉÍÓÚÑ\s]+?)(?=,)'
+        if re.search(patron_nombre, texto_nuevo, re.IGNORECASE):
+            texto_nuevo = re.sub(
+                patron_nombre, 
+                f"Don(a) {datos.get('nombre', '').upper()}", 
+                texto_nuevo,
+                flags=re.IGNORECASE
+            )
+        
+        # PATRÓN 2: Buscar RUN con formato XX.XXX.XXX-X
+        patron_run = r'\d{1,2}\.\d{3}\.\d{3}-[\dKk]'
+        if re.search(patron_run, texto_nuevo) and datos.get('run'):
+            texto_nuevo = re.sub(patron_run, datos.get('run', ''), texto_nuevo)
+        
+        # PATRÓN 3: Buscar "RBD" seguido de números
+        patron_rbd = r'RBD\s+\d+'
+        if re.search(patron_rbd, texto_nuevo) and datos.get('rbd'):
+            texto_nuevo = re.sub(patron_rbd, f"RBD  {datos.get('rbd', '')}", texto_nuevo)
+        
+        # PATRÓN 4: Buscar nombre de curso (X° básico/medio)
+        patron_curso = r'\d+°\s+(básico|medio)\s+[A-Z]'
+        if re.search(patron_curso, texto_nuevo, re.IGNORECASE) and datos.get('curso'):
+            texto_nuevo = re.sub(
+                patron_curso,
+                datos.get('curso', ''),
+                texto_nuevo,
+                flags=re.IGNORECASE
+            )
+        
+        # PATRÓN 5: Buscar año (4 dígitos consecutivos)
+        patron_anio = r'\b202\d\b'
+        if re.search(patron_anio, texto_nuevo) and datos.get('año'):
+            texto_nuevo = re.sub(patron_anio, str(datos.get('año', '')), texto_nuevo)
+        
+        # PATRÓN 6: Buscar fecha completa "DD de MES del YYYY"
+        patron_fecha = r'\d{1,2}\s+de\s+\w+\s+del\s+\d{4}'
+        if re.search(patron_fecha, texto_nuevo):
+            texto_nuevo = re.sub(patron_fecha, fecha, texto_nuevo)
+        
+        # PATRÓN 7: Buscar nombre de establecimiento (todo en mayúsculas)
+        # Reemplazar nombres largos en mayúsculas (más de 3 palabras)
+        patron_establecimiento = r'[A-ZÁÉÍÓÚÑ]+(?:\s+[A-ZÁÉÍÓÚÑ]+){2,}'
+        matches = re.findall(patron_establecimiento, texto_nuevo)
+        if matches and datos.get('establecimiento'):
+            # Reemplazar el match más largo (probablemente el nombre del establecimiento)
+            nombre_mas_largo = max(matches, key=len)
+            if len(nombre_mas_largo) > 10:  # Solo si es suficientemente largo
+                texto_nuevo = texto_nuevo.replace(
+                    nombre_mas_largo,
+                    datos.get('establecimiento', '').upper()
+                )
+        
+        # Si hubo cambios, actualizar el párrafo
         if texto_nuevo != texto_original:
-            # Guardar el formato del primer run
+            # Limpiar runs existentes
+            for run in para.runs:
+                run.text = ''
+            
+            # Agregar el nuevo texto
             if para.runs:
-                formato_original = {
-                    'bold': para.runs[0].bold,
-                    'italic': para.runs[0].italic,
-                    'underline': para.runs[0].underline,
-                    'font_name': para.runs[0].font.name if para.runs[0].font.name else None,
-                    'font_size': para.runs[0].font.size
-                }
-                
-                # Limpiar el párrafo
-                for run in para.runs:
-                    run.text = ''
-                
-                # Añadir el texto nuevo con el formato original
-                nuevo_run = para.runs[0] if para.runs else para.add_run()
-                nuevo_run.text = texto_nuevo
-                
-                # Aplicar formato
-                if formato_original.get('bold'):
-                    nuevo_run.bold = True
-                if formato_original.get('italic'):
-                    nuevo_run.italic = True
-                if formato_original.get('underline'):
-                    nuevo_run.underline = True
-                if formato_original.get('font_name'):
-                    nuevo_run.font.name = formato_original['font_name']
-                if formato_original.get('font_size'):
-                    nuevo_run.font.size = formato_original['font_size']
+                para.runs[0].text = texto_nuevo
+            else:
+                para.add_run(texto_nuevo)
     
     def _formatear_fecha(self, fecha):
         """
