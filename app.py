@@ -70,7 +70,7 @@ st.markdown("""
 @st.cache_data
 def cargar_datos():
     """Carga los datos de prematrícula desde el archivo Excel"""
-    df = pd.read_excel('20260122 Prematricula_2026_por_Estud_-_SANTA_CORINA.xlsx')
+    df = pd.read_excel('datos_prematricula.xlsx')
     return df
 
 
@@ -261,7 +261,7 @@ def main():
                                 }
                                 
                                 # Generar certificado
-                                generador = GeneradorCertificado('Formato certificado de matrícula.docx')
+                                generador = GeneradorCertificado('template_certificado.docx')
                                 certificado_buffer = generador.generar_certificado(
                                     datos_certificado,
                                     fecha_emision=datetime.combine(fecha_emision, datetime.min.time())
