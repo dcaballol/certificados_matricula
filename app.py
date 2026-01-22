@@ -70,7 +70,7 @@ st.markdown("""
 @st.cache_data
 def cargar_datos():
     """Carga los datos de prematrícula desde el archivo Excel"""
-    df = pd.read_excel('datos_prematricula.xlsx')
+    df = pd.read_excel('20260122 Prematricula_2026_por_Estud_-_SANTA_CORINA.xlsx')
     return df
 
 
@@ -189,9 +189,7 @@ def main():
             st.error("❌ Por favor ingresa un RUN válido")
             st.stop()
         
-        # Validar RUN (opcional, pero recomendado)
-        if not validar_run(run_input):
-            st.warning(f"⚠️ El RUN ingresado tiene un dígito verificador incorrecto. Buscando de todas formas...")
+        # NO validar DV - el sistema lo calculará automáticamente
         
         # Buscar estudiante
         with st.spinner('Buscando estudiante...'):
@@ -288,15 +286,14 @@ def main():
                                 }
                                 
                                 # Generar certificado
-                                generador = GeneradorCertificado('template_certificado.docx')
+                                generador = GeneradorCertificado('Formato certificado de matrícula.docx')
                                 certificado_buffer = generador.generar_certificado(
                                     datos_certificado,
                                     fecha_emision=datetime.combine(fecha_emision, datetime.min.time())
                                 )
                                 
                                 # Nombre del archivo
-                                run_sin_formato = run_limpio[:-1]  # Sin DV
-                                nombre_archivo = f"Certificado_Matricula_{run_sin_formato}_{datetime.now().strftime('%Y%m%d')}.docx"
+                                nombre_archivo = f"Certificado_Matricula_{estudiante['SAL_RUN']}_{datetime.now().strftime('%Y%m%d')}.docx"
                                 
                                 # Botón de descarga
                                 st.success("✅ Certificado generado exitosamente")
