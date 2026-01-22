@@ -209,12 +209,27 @@ def main():
                 """)
             st.stop()
         else:
-            # Mostrar datos del estudiante encontrado
-            st.success("✅ **ESTUDIANTE ENCONTRADO**")
-            
-            # Formatear datos
-            run_formateado = formatear_run(estudiante['SAL_RUN'])
-            curso_completo = formatear_curso(estudiante['COD_GRADO_GLOSA_PRE'], estudiante['LET_CUR_PRE'])
+            # GUARDAR EN SESSION STATE
+            st.session_state['estudiante'] = estudiante
+            st.session_state['run_formateado'] = formatear_run(estudiante['SAL_RUN'])
+            st.session_state['curso_completo'] = formatear_curso(estudiante['COD_GRADO_GLOSA_PRE'], estudiante['LET_CUR_PRE'])
+    
+    # MOSTRAR DATOS SI EXISTE EN SESSION STATE
+    if 'estudiante' in st.session_state:
+        estudiante = st.session_state['estudiante']
+        run_formateado = st.session_state['run_formateado']
+        curso_completo = st.session_state['curso_completo']
+        
+        # Mostrar datos del estudiante encontrado
+        st.success("✅ **ESTUDIANTE ENCONTRADO**")
+        
+        # Botón para nueva búsqueda
+        if st.button("🔄 Buscar Otro Estudiante", type="secondary"):
+            # Limpiar session state
+            del st.session_state['estudiante']
+            del st.session_state['run_formateado']
+            del st.session_state['curso_completo']
+            st.rerun()
             
             # Mostrar información en columnas
             st.markdown("### 📋 Datos del Estudiante")
