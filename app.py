@@ -230,6 +230,31 @@ def main():
             del st.session_state['run_formateado']
             del st.session_state['curso_completo']
             st.rerun()
+        
+        # Mostrar información en columnas
+        st.markdown("### 📋 Datos del Estudiante")
+        
+        col1, col2, col3 = st.columns(3)
+        
+        with col1:
+            st.metric("RUN", run_formateado)
+        
+        with col2:
+            st.metric("Curso", curso_completo)
+        
+        with col3:
+            st.metric("Año Escolar", estudiante['ANO_ESCOLAR'])
+        
+        # Información del establecimiento
+        st.markdown("### 🏫 Establecimiento Educacional")
+        
+        col1, col2 = st.columns(2)
+        with col1:
+            st.info(f"**Nombre:** {estudiante['NOM_RBD']}")
+        with col2:
+            st.info(f"**RBD:** {estudiante['RBD_PRE']} | **Comuna:** {estudiante['NOM_COM_RBD']}")
+        
+        st.markdown("---")
             
             # Mostrar información en columnas
             st.markdown("### 📋 Datos del Estudiante")
