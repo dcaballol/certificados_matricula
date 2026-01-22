@@ -70,7 +70,7 @@ st.markdown("""
 @st.cache_data
 def cargar_datos():
     """Carga los datos de prematrícula desde el archivo Excel"""
-    df = pd.read_excel('datos_prematricula.xlsx')
+    df = pd.read_excel('/mnt/user-data/uploads/20260122_Prematricula_2026_por_Estud_-_SANTA_CORINA.xlsx')
     return df
 
 
@@ -86,15 +86,23 @@ def buscar_estudiante(df, run):
         DataFrame o None: Fila del estudiante si se encuentra, None en caso contrario
     """
     # Limpiar el RUN ingresado
-    run_limpio = limpiar_run(run)
+    run_limpio = limpiar_run(str(run))
     
     # Extraer solo los números (sin DV)
-    if len(run_limpio) > 1:
-        run_sin_dv = int(run_limpio[:-1])
+    if len(run_limpio) >= 2:
+        try:
+            # Quitar el último carácter (DV) y convertir a int
+            run_sin_dv = int(run_limpio[:-1])
+        except ValueError:
+            # Si todo el string es el RUN sin DV
+            try:
+                run_sin_dv = int(run_limpio)
+            except:
+                return None
     else:
         return None
     
-    # Buscar en el DataFrame
+    # Buscar en el DataFrame (buscar como int)
     resultado = df[df['SAL_RUN'] == run_sin_dv]
     
     if len(resultado) > 0:
@@ -162,22 +170,33 @@ def main():
         run_limpio = limpiar_run(run_input)
         
         if not run_limpio or len(run_limpio) < 2:
-            st.markdown('<div class="error-box">❌ Por favor ingresa un RUN válido</div>', unsafe_allow_html=True)
-            return
+            st.error("❌ Por favor ingresa un RUN válido")
+            st.stop()
         
         # Validar RUN (opcional, pero recomendado)
         if not validar_run(run_input):
-            st.markdown(f'<div class="warning-box">⚠️ El RUN ingresado no tiene un dígito verificador válido. Verificando de todas formas...</div>', unsafe_allow_html=True)
+            st.warning(f"⚠️ El RUN ingresado tiene un dígito verificador incorrecto. Buscando de todas formas...")
         
         # Buscar estudiante
         with st.spinner('Buscando estudiante...'):
             estudiante = buscar_estudiante(df, run_input)
         
         if estudiante is None:
-            st.markdown('<div class="error-box">❌ No se encontró ningún estudiante con ese RUN en la base de datos de prematrícula 2026</div>', unsafe_allow_html=True)
+            st.error("❌ **NO SE ENCONTRÓ** ningún estudiante con ese RUN en la base de prematrícula 2026")
+            st.info(f"🔍 RUN buscado: **{run_input}**")
+            
+            # Ayuda adicional
+            with st.expander("💡 Sugerencias"):
+                st.write("""
+                - Verifica que el RUN esté escrito correctamente
+                - Asegúrate que el estudiante esté en prematrícula 2026
+                - Prueba sin puntos ni guión: solo números
+                - Contacta al administrador si el problema persiste
+                """)
+            st.stop()
         else:
             # Mostrar datos del estudiante encontrado
-            st.markdown('<div class="success-box">✅ <strong>Estudiante encontrado</strong></div>', unsafe_allow_html=True)
+            st.success("✅ **ESTUDIANTE ENCONTRADO**")
             
             # Formatear datos
             run_formateado = formatear_run(estudiante['SAL_RUN'])
@@ -189,30 +208,22 @@ def main():
             col1, col2, col3 = st.columns(3)
             
             with col1:
-                st.markdown('<div class="info-box">', unsafe_allow_html=True)
-                st.markdown("**RUN:**")
-                st.markdown(f"<h3>{run_formateado}</h3>", unsafe_allow_html=True)
-                st.markdown('</div>', unsafe_allow_html=True)
+                st.metric("RUN", run_formateado)
             
             with col2:
-                st.markdown('<div class="info-box">', unsafe_allow_html=True)
-                st.markdown("**Curso:**")
-                st.markdown(f"<h3>{curso_completo}</h3>", unsafe_allow_html=True)
-                st.markdown('</div>', unsafe_allow_html=True)
+                st.metric("Curso", curso_completo)
             
             with col3:
-                st.markdown('<div class="info-box">', unsafe_allow_html=True)
-                st.markdown("**Año Escolar:**")
-                st.markdown(f"<h3>{estudiante['ANO_ESCOLAR']}</h3>", unsafe_allow_html=True)
-                st.markdown('</div>', unsafe_allow_html=True)
+                st.metric("Año Escolar", estudiante['ANO_ESCOLAR'])
             
             # Información del establecimiento
             st.markdown("### 🏫 Establecimiento Educacional")
-            st.markdown('<div class="info-box">', unsafe_allow_html=True)
-            st.markdown(f"**Nombre:** {estudiante['NOM_RBD']}")
-            st.markdown(f"**RBD:** {estudiante['RBD_PRE']}")
-            st.markdown(f"**Comuna:** {estudiante['NOM_COM_RBD']}")
-            st.markdown('</div>', unsafe_allow_html=True)
+            
+            col1, col2 = st.columns(2)
+            with col1:
+                st.info(f"**Nombre:** {estudiante['NOM_RBD']}")
+            with col2:
+                st.info(f"**RBD:** {estudiante['RBD_PRE']} | **Comuna:** {estudiante['NOM_COM_RBD']}")
             
             st.markdown("---")
             
@@ -261,7 +272,7 @@ def main():
                                 }
                                 
                                 # Generar certificado
-                                generador = GeneradorCertificado('template_certificado.docx')
+                                generador = GeneradorCertificado('/mnt/user-data/uploads/Formato_certificado_de_matrícula.docx')
                                 certificado_buffer = generador.generar_certificado(
                                     datos_certificado,
                                     fecha_emision=datetime.combine(fecha_emision, datetime.min.time())
