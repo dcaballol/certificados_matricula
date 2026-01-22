@@ -255,102 +255,77 @@ def main():
             st.info(f"**RBD:** {estudiante['RBD_PRE']} | **Comuna:** {estudiante['NOM_COM_RBD']}")
         
         st.markdown("---")
-            
-            # Mostrar información en columnas
-            st.markdown("### 📋 Datos del Estudiante")
-            
-            col1, col2, col3 = st.columns(3)
-            
-            with col1:
-                st.metric("RUN", run_formateado)
-            
-            with col2:
-                st.metric("Curso", curso_completo)
-            
-            with col3:
-                st.metric("Año Escolar", estudiante['ANO_ESCOLAR'])
-            
-            # Información del establecimiento
-            st.markdown("### 🏫 Establecimiento Educacional")
-            
+        
+        # Formulario para generar certificado
+        st.markdown("### 📝 Generar Certificado")
+        
+        with st.form("form_certificado"):
             col1, col2 = st.columns(2)
+            
             with col1:
-                st.info(f"**Nombre:** {estudiante['NOM_RBD']}")
-            with col2:
-                st.info(f"**RBD:** {estudiante['RBD_PRE']} | **Comuna:** {estudiante['NOM_COM_RBD']}")
-            
-            st.markdown("---")
-            
-            # Formulario para generar certificado
-            st.markdown("### 📝 Generar Certificado")
-            
-            with st.form("form_certificado"):
-                col1, col2 = st.columns(2)
-                
-                with col1:
-                    nombre_estudiante = st.text_input(
-                        "Nombre completo del estudiante*",
-                        placeholder="Ej: MARÍA FERNANDA GONZÁLEZ LÓPEZ",
-                        help="Ingresa el nombre tal como debe aparecer en el certificado (en mayúsculas)"
-                    )
-                
-                with col2:
-                    fecha_emision = st.date_input(
-                        "Fecha de emisión",
-                        value=datetime.now(),
-                        help="Fecha que aparecerá en el certificado"
-                    )
-                
-                finalidad = st.text_input(
-                    "Finalidad del certificado (opcional)",
-                    value="Para fines pertinentes",
-                    help="Especifica la finalidad del certificado"
+                nombre_estudiante = st.text_input(
+                    "Nombre completo del estudiante*",
+                    placeholder="Ej: MARÍA FERNANDA GONZÁLEZ LÓPEZ",
+                    help="Ingresa el nombre tal como debe aparecer en el certificado (en mayúsculas)"
                 )
-                
-                generar_btn = st.form_submit_button("📄 Generar Certificado", type="primary", use_container_width=True)
-                
-                if generar_btn:
-                    if not nombre_estudiante or nombre_estudiante.strip() == "":
-                        st.error("❌ Por favor ingresa el nombre del estudiante")
-                    else:
-                        try:
-                            with st.spinner('Generando certificado...'):
-                                # Preparar datos para el certificado
-                                datos_certificado = {
-                                    'nombre': nombre_estudiante.upper(),
-                                    'run': run_formateado,
-                                    'establecimiento': estudiante['NOM_RBD'],
-                                    'rbd': estudiante['RBD_PRE'],
-                                    'curso': curso_completo,
-                                    'año': estudiante['ANO_ESCOLAR']
-                                }
-                                
-                                # Generar certificado
-                                generador = GeneradorCertificado('template_certificado.docx')
-                                certificado_buffer = generador.generar_certificado(
-                                    datos_certificado,
-                                    fecha_emision=datetime.combine(fecha_emision, datetime.min.time())
-                                )
-                                
-                                # Nombre del archivo
-                                nombre_archivo = f"Certificado_Matricula_{estudiante['SAL_RUN']}_{datetime.now().strftime('%Y%m%d')}.docx"
-                                
-                                # Botón de descarga
-                                st.success("✅ Certificado generado exitosamente")
-                                st.download_button(
-                                    label="📥 Descargar Certificado",
-                                    data=certificado_buffer,
-                                    file_name=nombre_archivo,
-                                    mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-                                    type="primary",
-                                    use_container_width=True
-                                )
-                                
-                                st.balloons()
-                        
-                        except Exception as e:
-                            st.error(f"❌ Error al generar el certificado: {str(e)}")
-                            st.exception(e)
+            
+            with col2:
+                fecha_emision = st.date_input(
+                    "Fecha de emisión",
+                    value=datetime.now(),
+                    help="Fecha que aparecerá en el certificado"
+                )
+            
+            finalidad = st.text_input(
+                "Finalidad del certificado (opcional)",
+                value="Para fines pertinentes",
+                help="Especifica la finalidad del certificado"
+            )
+            
+            generar_btn = st.form_submit_button("📄 Generar Certificado", type="primary", use_container_width=True)
+            
+            if generar_btn:
+                if not nombre_estudiante or nombre_estudiante.strip() == "":
+                    st.error("❌ Por favor ingresa el nombre del estudiante")
+                else:
+                    try:
+                        with st.spinner('Generando certificado...'):
+                            # Preparar datos para el certificado
+                            datos_certificado = {
+                                'nombre': nombre_estudiante.upper(),
+                                'run': run_formateado,
+                                'establecimiento': estudiante['NOM_RBD'],
+                                'rbd': estudiante['RBD_PRE'],
+                                'curso': curso_completo,
+                                'año': estudiante['ANO_ESCOLAR']
+                            }
+                            
+                            # Generar certificado
+                            generador = GeneradorCertificado('template_certificado.docx')
+                            certificado_buffer = generador.generar_certificado(
+                                datos_certificado,
+                                fecha_emision=datetime.combine(fecha_emision, datetime.min.time())
+                            )
+                            
+                            # Nombre del archivo
+                            nombre_archivo = f"Certificado_Matricula_{estudiante['SAL_RUN']}_{datetime.now().strftime('%Y%m%d')}.docx"
+                            
+                            # Botón de descarga
+                            st.success("✅ Certificado generado exitosamente")
+                            st.download_button(
+                                label="📥 Descargar Certificado",
+                                data=certificado_buffer,
+                                file_name=nombre_archivo,
+                                mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                                type="primary",
+                                use_container_width=True
+                            )
+                            
+                            st.balloons()
+                    
+                    except Exception as e:
+                        st.error(f"❌ Error al generar el certificado: {str(e)}")
+                        st.exception(e)
 
 
 if __name__ == "__main__":
