@@ -70,7 +70,7 @@ st.markdown("""
 @st.cache_data
 def cargar_datos():
     """Carga los datos de prematrícula desde el archivo Excel"""
-    df = pd.read_excel('datos_matricula.xlsx')
+    df = pd.read_excel('datos_prematricula.xlsx')
     return df
 
 
